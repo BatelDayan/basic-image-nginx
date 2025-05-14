@@ -29,13 +29,13 @@ pipeline {
                     # -----------------
 
                     echo "Stage Initialize"
-                    if [ ! -f "$FILE" ]; then
-                        LAST_SHA=$(sudo docker pull "$IMAGE" | grep "Digest:" | awk '{print $2}')
-                        echo "$LAST_SHA" > "$FILE"
-                        echo "Created $FILE with default value"
+                    if [ ! -f "\$FILE" ]; then
+                        LAST_SHA=\$(sudo docker pull "\$IMAGE" | grep "Digest:" | awk '{print \$2}')
+                        echo "\$LAST_SHA" > "\$FILE"
+                        echo "Created \$FILE with default value"
                     else
-                        LAST_SHA=$(cat "$FILE")
-                        echo "Read $LAST_SHA from $FILE"
+                        LAST_SHA=$(cat "\$FILE")
+                        echo "Read \$LAST_SHA from \$FILE"
                     fi
 
 
@@ -75,7 +75,7 @@ pipeline {
                     echo "Stage Update ECR REPO"
 
                     if [ "$CHANGED" == "true" ]; then
-                        aws ecr get-login-password | sudo docker login --username AWS --password-stdin "$ECS_ID_Bynat".dkr.ecr."$Region_Bynat_Aws".amazonaws.com
+                        aws ecr get-login-password | sudo docker login --username AWS --password-stdin "$ECS_ID_Bynat".dkr.ecr."$Region_Bynat_AWS".amazonaws.com
                         sudo docker tag nginx:latest 314525640319.dkr.ecr.il-central-1.amazonaws.com/"$ECR_REPO":batel-nginx
                         sudo docker push "$ECS_ID_Bynat".dkr.ecr."$Region_Bynat_AWS".amazonaws.com/"$ECR_REPO":batel-nginx
                     else
