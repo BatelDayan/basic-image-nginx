@@ -8,7 +8,7 @@ pipeline {
         LAST_SHA = "gibberish"
         CHANGED = "false"
         STACK_NAME = "batel-stack"
-        ESR_REPO = "batel-repo"
+        ECR_REPO = "batel-repo"
         Access_Key_ID_Bynat_AWS = credentials('Access-Key-ID-Bynat-AWS')
         Secret_Access_Key_Bynat_AWS = credentials('Secret-Access-Key-Bynat-AWS')
         Region_Bynat_AWS = credentials('Region-Bynat-Aws')
@@ -42,9 +42,11 @@ pipeline {
                         writeFile file: env.FILE, text: currentSha
                         env.LAST_SHA = currentSha
                         env.CHANGED = "true"
+                        echo "Setting CHANGED to: ${env.CHANGED}"
                     } else {
                         echo "Image has not changed, no update needed"
                         env.CHANGED = "false"
+                        echo "Setting CHANGED to: ${env.CHANGED}"
                     }
                 }
             }
@@ -52,7 +54,10 @@ pipeline {
 
         stage('CONNECT TO AWS') {
             when {
-                expression { return env.CHANGED == "true" }
+                expression { 
+                    echo "Checking CHANGED value: ${env.CHANGED}"
+                    return env.CHANGED == "true" 
+                }
             }
             steps {
                 sh """
@@ -69,9 +74,9 @@ pipeline {
             }
             steps {
                 sh """
-                    aws ecr get-login-password | sudo docker login --username AWS --password-stdin $ECS_ID_Bynat.dkr.ecr.$Region_Bynat_AWS.amazonaws.com
-                    sudo docker tag $IMAGE $ECS_ID_Bynat.dkr.ecr.$Region_Bynat_AWS.amazonaws.com/$ESR_REPO:static-web
-                    sudo docker push $ECS_ID_Bynat.dkr.ecr.$Region_Bynat_AWS.amazonaws.com/$ESR_REPO:static-web
+                    aws ecr get-login-password --region $Region_Bynat_AWS | sudo docker login --username AWS --password-stdin $ECS_ID_Bynat.dkr.ecr.$Region_Bynat_AWS.amazonaws.com
+                    sudo docker tag $IMAGE $ECS_ID_Bynat.dkr.ecr.$Region_Bynat_AWS.amazonaws.com/$ECR_REPO:static-web
+                    sudo docker push $ECS_ID_Bynat.dkr.ecr.$Region_Bynat_AWS.amazonaws.com/$ECR_REPO:static-web
                 """
             }
         }
@@ -82,7 +87,7 @@ pipeline {
             }
             steps {
                 sh """
-                    aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$CLOUD_FORMATION
+                    aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$CLOUD_FORMATION --capabilities CAPABILITY_IAM
                 """
             }
         }
