@@ -26,7 +26,7 @@ pipeline {
                         echo "Created $FILE with default value: ${env.LAST_SHA}"
                     } else {
                         env.LAST_SHA = readFile(env.FILE).trim()
-                        echo "Read $LAST_SHA from $FILE"
+                        echo "Read ${env.LAST_SHA} from $FILE"
                     }
                 }
             }
@@ -37,6 +37,8 @@ pipeline {
                 script {
                     def currentSha = sh(script: "sudo docker pull \"$IMAGE\" | grep 'Digest:' | awk '{print \$2}'", returnStdout: true).trim()
                     echo "Current SHA: $currentSha"
+                    echo "Last SHA: ${env.LAST_SHA}"
+                    
                     if (currentSha != env.LAST_SHA) {
                         echo "Image has changed, updating $FILE"
                         writeFile file: env.FILE, text: currentSha
