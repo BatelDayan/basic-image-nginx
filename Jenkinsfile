@@ -6,7 +6,7 @@ pipeline {
             steps {
                 sh '''
                     IMAGE="batel123d/static-web"
-                    DIGEST=$(docker pull "$IMAGE" | grep "Digest:" | awk '{print $2}')
+                    DIGEST=$(sudo docker pull "$IMAGE" | grep "Digest:" | awk '{print $2}')
                     echo "Digest is: $DIGEST"
                 '''
             }
