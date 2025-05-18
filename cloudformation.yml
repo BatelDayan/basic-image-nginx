@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+  This template create an ECS Fargate service with a simple static web application
+
+Resources:
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      ExecutionRoleArn: arn:aws:iam::314525640319:role/ecsTaskExecutionRole
+      ContainerDefinitions:
+        - Name: static-web-container
+          Image: 314525640319.dkr.ecr.il-central-1.amazonaws.com/batel-repo:rock-paper 
+          PortMappings:
+            - ContainerPort: 80
+
+  MyECSService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: imtech
+      LaunchType: FARGATE
+      DesiredCount: 1
+      TaskDefinition: !Ref TaskDefinition
+      ServiceName: static-web-service  
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - subnet-088b7d937a4cd5d85
+          SecurityGroups:
+            - sg-0ac3749215afde82a
+
+      LoadBalancers:
+        - TargetGroupArn: arn:aws:elasticloadbalancing:il-central-1:314525640319:targetgroup/mendel-tg/a551a016a0513b87
+          ContainerName: static-web-container
+          ContainerPort: 80        

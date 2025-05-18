@@ -2,11 +2,14 @@ pipeline {
     agent any
 
     environment {
-        FILE = "/var/jenkins_home/shared/global_version.txt"
+        LAST_SHA_FILE = "/var/jenkins_home/shared/global_version.txt"
         CLOUD_FORMATION = "/var/jenkins_home/shared/cloudformation.yaml"
         IMAGE = "batel123d/static-web"
-        LAST_SHA = ""
-        CHANGED = "false"
+        STACK_NAME = "static-web-stack"
+        Access_Key_ID_Bynat_AWS = credentials('Access-Key-ID-Bynat-AWS')
+        Secret_Access_Key_Bynat_AWS = credentials('Secret-Access-Key-Bynat-AWS')
+        Region= credentials('Region-Bynat-Aws')
+
     }
 
     stages {
@@ -14,64 +17,53 @@ pipeline {
         stage('initialize') {
             steps {
                 sh '''
-                    if[ ! -f "$FILE" ]; then
+                    if [ ! -f "$FILE" ]; then
                         LAST_SHA=$(docker pull "$IMAGE" | grep "Digest:" | awk '{print $2}')
                         echo "$LAST_SHA" > "$FILE"
                         echo "Created $FILE with default value"
-                    else
-                        LAST_SHA=$(cat "$FILE")
-                        echo "Read $LAST_SHA from $FILE"
                     fi
                 '''
             }
         }
 
-        stage('Get Image Digest') {
+        stage('Update Last SHA File') {
             steps {
                 sh '''
                     CURRENT_SHA=$(docker pull "$IMAGE" | grep "Digest:" | awk '{print $2}')
                     echo "Current SHA: $CURRENT_SHA"
+                    LAST_SHA=$(cat "$LAST_SHA_FILE")
                     if [ "$CURRENT_SHA" != "$LAST_SHA" ]; then
                         echo "Image has changed, updating $FILE"
-                        echo "$CURRENT_SHA" > "$FILE"
-                        LAST_SHA=$CURRENT_SHA
-                        CHANGED="true"                              
+                        echo "$CURRENT_SHA" > "$LAST_SHA_FILE"                             
                     else
                         echo "Image has not changed, no update needed"
-                        CHANGED="false"
+                        echo "stop" > stop.flag
+                        exit 0
                     fi
                 '''
-            }
-        }
-
-        stage('CONNECT TO AWS') {
-            steps {
                 script {
-                    if (CHANGED == "true") {
-                        sh '''
-                            aws configure set aws_access_key_id $Access-Key-ID-Bynat-AWS
-                            aws configure set aws_secret_access_key $Secret-Access-Key-Bynat-AWS
-                            aws configure set default.region $Region-Bynat-Aws
-                        '''
-                    } else {
-                        echo "No changes detected, skipping AWS configuration."
+                    if (fileExists('stop.flag')) {
+                        sh 'rm -f stop.flag'
+                        return
                     }
                 }
             }
         }
 
-        stage('Update CloudFormation') {
+        stage('Update CloudFormation AWS') {
             steps {
                 script {
-                    if (CHANGED == "true") {
-                        sh '''
-                            aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$CLOUD_FORMATION
-                        '''
-                    } else {
-                        echo "No changes detected, skipping CloudFormation update."
-                    }
-                }
+                    sh '''
+                        aws configure set aws_access_key_id $Access_Key_ID_Bynat_AWS
+                        aws configure set aws_secret_access_key $Secret_Access_Key_Bynat_AWS
+                        aws configure set default.region $Region
+                        aws cloudformation update-stack --stack-name $STACK_NAME --template-body file://$CLOUD_FORMATION
+
+                    '''
+                } 
             }
         }
     }
 }
+
+
