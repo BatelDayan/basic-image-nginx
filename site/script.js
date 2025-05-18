@@ -26,7 +26,7 @@ function playGame(playerChoice){
                 result = computerChoice === "rock" ? "YOU WIN!" : "YOU LOSE!";
                 break;
             case "scissors":
-                result = computerChoice === "paper" ? "YOU WIN!" : "YOU LOSE!";
+                result = computerChoice === "paper" ? "YOU WIN!" : "YOU LOSE!!!!!";
                 break;
         }    
     }
